@@ -70,7 +70,7 @@ async def daily_invite():
                 accepted_users.clear()
                 message = await channel.send(
                     "**單中開幹**\n"
-                    "今晚 9.30 要一起玩《咆嘯深淵》嗎？\n"
+                    "今晚要一起玩《咆嘯深淵》嗎？\n"
                     "邀請成員：\n" +
                     "\n".join([f"<@{user_id}>" for user_id in FIXED_USERS]) +
                     "\n\n如果想参加，請點 👍 回應！")
