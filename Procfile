@@ -1,1 +1,1 @@
-web: python lol_bot.py
+dc_bot: python lol_bot.py
