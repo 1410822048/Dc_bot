@@ -4,6 +4,7 @@ from discord.ext import commands, tasks
 from datetime import time
 from flask import Flask
 import asyncio
+import threading
 
 # 获取 Discord Token
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -30,7 +31,7 @@ accepted_users = set()
 channel_ids = []
 
 # 指定的语音频道 ID
-VOICE_CHANNEL_ID = 681835115994939395  # 替換為你的語音頻道 ID
+VOICE_CHANNEL_ID = 681835115994939395  # 替换为你的语音频道 ID
 
 # 创建 Flask 应用
 app = Flask(__name__)
@@ -127,8 +128,14 @@ def start_flask():
     app.run(host='0.0.0.0', port=port)
 
 # 启动机器人和 Flask 服务
-if __name__ == "__main__":
-    # 使用 asyncio 运行 Flask 和 Bot
+def start_bot():
     loop = asyncio.get_event_loop()
-    loop.create_task(bot.start(TOKEN))
-    start_flask()
+    loop.run_until_complete(bot.start(TOKEN))
+
+if __name__ == "__main__":
+    # 在独立线程中启动 Flask 服务
+    flask_thread = threading.Thread(target=start_flask)
+    flask_thread.start()
+
+    # 启动 Discord Bot
+    start_bot()
