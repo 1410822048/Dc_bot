@@ -7,6 +7,12 @@ import asyncio
 # 获取 Discord Token
 TOKEN = os.getenv("DISCORD_TOKEN")
 
+# 调试输出，确保 TOKEN 是有效的
+if TOKEN is None:
+    print("ERROR: DISCORD_TOKEN is not set.")
+else:
+    print(f"Successfully loaded token: {TOKEN[:5]}...")  # 打印前5个字符进行确认
+
 # 启用特权意图
 intents = discord.Intents.default()
 intents.message_content = True
