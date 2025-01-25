@@ -5,7 +5,7 @@ from datetime import time
 import asyncio
 
 # 获取 Discord Token
-TOKEN = os.getenv("DISCORD_TOKEN")
+TOKEN =  os.environ['DISCORD_TOKEN']
 
 # 调试输出，确保 TOKEN 是有效的
 if TOKEN is None:
