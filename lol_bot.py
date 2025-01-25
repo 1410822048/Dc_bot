@@ -86,26 +86,64 @@ async def daily_invite():
                         for member in voice_channel.members:
                             try:
                                 await member.move_to(None)  # 将用户移出语音频道
-                                await channel.send(f"{member.mention} 已从语音频道中移出。")
+                                await channel.send(f"{member.mention} 已從語音頻道中移出。")
                             except discord.Forbidden:
-                                await channel.send(f"没有权限移动 {member.mention}。")
+                                await channel.send(f"沒有權限移動 {member.mention}。")
                             except discord.HTTPException as e:
-                                await channel.send(f"移动用户时出错: {e}")
+                                await channel.send(f"移動用戶時出錯: {e}")
                     else:
-                        await channel.send("找不到指定的语音频道，请检查频道_ID 是否正确。")
+                        await channel.send("找不到指定的語音頻道，請檢查 頻道_ID 是否正確。")
                 else:
-                    await channel.send("等等开幹！")
+                    await channel.send("等等開幹！")
 
             except Exception as e:
-                print(f"发送邀请消息出错: {e}")
+                print(f"發送邀請訊息出錯: {e}")
         else:
-            print(f"无法找到频道 ID {channel_id}，请确认频道 ID 是否正确。")
+            print(f"無法找到频道 ID {channel_id}，請確認頻道 ID 是否正確。")
     else:
-        print("没有找到频道 ID，请检查 Bot 是否已加入服务器。")
+        print("沒有找到頻道 ID，請檢查 Bot 是否已加入伺服器。")
 
 @bot.event
 async def on_message(message):
-    # 确保其他指令（例如 !list）仍然可以正常运行
+    # 檢查訊息是否來自固定成員
+    if message.author.id in FIXED_USERS and message.channel.id in channel_ids:
+        # 檢查訊息內容
+        if message.content == "1️⃣":  # :one: 表情
+            accepted_users.add(message.author.id)
+            await message.channel.send(f"{message.author.mention} 已同意参加！")
+
+            # 將用戶移動到指定的語音頻道
+            voice_channel = bot.get_channel(VOICE_CHANNEL_ID)
+            if voice_channel and isinstance(voice_channel, discord.VoiceChannel):
+                try:
+                    # 檢查用戶是否在語音頻道中
+                    if message.author.voice and message.author.voice.channel:
+                        await message.author.move_to(voice_channel)
+                        await message.channel.send(f"{message.author.mention} 已加入遊戲打屁區！")
+                    else:
+                        await message.channel.send(f"{message.author.mention} 請確認是否該伺服器有語音頻道。")
+                except discord.Forbidden:
+                    await message.channel.send(f"沒有權限移動 {message.author.mention}。")
+                except discord.HTTPException as e:
+                    await message.channel.send(f"移動用戶時出錯: {e}")
+            else:
+                await message.channel.send("找不到語音頻道，請檢查 頻道_ID 是否正確。")
+
+        elif message.content == "0️⃣":  # :zero: 表情
+            accepted_users.discard(message.author.id)
+            await message.channel.send(f"{message.author.mention} 已取消参加。")
+
+            # 將用戶從語音頻道中移出
+            if message.author.voice and message.author.voice.channel:
+                try:
+                    await message.author.move_to(None)  # 將用戶移出語音頻道
+                    await message.channel.send(f"{message.author.mention} 已從語音中移出。")
+                except discord.Forbidden:
+                    await message.channel.send(f"沒有權限移動 {message.author.mention}。")
+                except discord.HTTPException as e:
+                    await message.channel.send(f"移動用戶時出錯: {e}")
+
+    # 確保其他指令（例如 !list）仍然可以正常運行
     await bot.process_commands(message)
 
 @bot.command(name="list")
