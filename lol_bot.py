@@ -2,9 +2,7 @@ import os
 import discord
 from discord.ext import commands, tasks
 from datetime import time
-from flask import Flask
 import asyncio
-import threading
 
 # 获取 Discord Token
 TOKEN = os.getenv("DISCORD_TOKEN")
@@ -32,14 +30,6 @@ channel_ids = []
 
 # 指定的语音频道 ID
 VOICE_CHANNEL_ID = 681835115994939395  # 替换为你的语音频道 ID
-
-# 创建 Flask 应用
-app = Flask(__name__)
-
-# 设置一个简单的首页，确保 Railway 项目在线
-@app.route('/')
-def index():
-    return "Bot is running"
 
 @bot.event
 async def on_ready():
@@ -122,20 +112,6 @@ async def list_accepted(ctx):
     else:
         await ctx.send("今天PASS")
 
-# 启动 Flask Web 服务
-def start_flask():
-    port = int(os.getenv("PORT", 3000))  # 使用 Railway 提供的动态端口
-    app.run(host='0.0.0.0', port=port)
-
-# 启动机器人和 Flask 服务
-def start_bot():
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(bot.start(TOKEN))
-
+# 启动机器人
 if __name__ == "__main__":
-    # 在独立线程中启动 Flask 服务
-    flask_thread = threading.Thread(target=start_flask)
-    flask_thread.start()
-
-    # 启动 Discord Bot
-    start_bot()
+    bot.run(TOKEN)
