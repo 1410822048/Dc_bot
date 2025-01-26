@@ -124,62 +124,55 @@ async def stop_bot_task():
 # 監聽表情反應
 @bot.event
 async def on_raw_reaction_add(payload):
+    """處理用戶的表情反應"""
     if payload.user_id == bot.user.id:
-        return  # 忽略機器人的反應
+        return
 
-    # 檢查反應是否來自固定成員
-    if payload.user_id in FIXED_USERS and target_channel and payload.channel_id == target_channel.id:
-        try:
-            # 獲取用戶和頻道對象
-            user = await bot.fetch_user(payload.user_id)
-            channel = bot.get_channel(payload.channel_id)
-            message = await channel.fetch_message(payload.message_id)
+    if payload.channel_id != target_channel.id or payload.user_id not in FIXED_USERS:
+        return
 
-            # 檢查表情
-            if str(payload.emoji) == "1️⃣":  # :one: 表情
-                # 如果用戶已經有 0️⃣ 反應，則移除 0️⃣ 反應
-                for reaction in message.reactions:
-                    if str(reaction.emoji) == "0️⃣" and await reaction.users().get(id=user.id):
-                        await message.remove_reaction("0️⃣", user)
+    try:
+        user = await bot.fetch_user(payload.user_id)
+        channel = bot.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
 
-                accepted_users.add(user.id)
-                await channel.send(f"**{user.mention} 已同意参加！**")
+        if payload.emoji.name == "1️⃣":
+            await _handle_reaction(message, user, accept=True)
+        elif payload.emoji.name == "0️⃣":
+            await _handle_reaction(message, user, accept=False)
+    except Exception as e:
+        print(f"處理表情反應時出錯: {e}")
 
-                # 發送語音頻道的邀請連結
-                if voice_channel and isinstance(voice_channel, discord.VoiceChannel):
-                    try:
-                        invite = await voice_channel.create_invite(max_uses=1, unique=True)
-                        await channel.send(f"{user.mention} 請點擊 [這裡]({invite.url}) 加入")
-                    except discord.Forbidden:
-                        await channel.send("**沒有權限生成邀請連結。**")
-                    except discord.HTTPException as e:
-                        await channel.send(f"**生成邀請連結時出錯: {e}**")
-                else:
-                    await channel.send("**找不到語音頻道，請檢查 頻道_ID 是否正確。**")
 
-            elif str(payload.emoji) == "0️⃣":  # :zero: 表情
-                # 如果用戶已經有 1️⃣ 反應，則移除 1️⃣ 反應
-                for reaction in message.reactions:
-                    if str(reaction.emoji) == "1️⃣" and await reaction.users().get(id=user.id):
-                        await message.remove_reaction("1️⃣", user)
+async def _handle_reaction(message, user, accept=True):
+    """處理表情反應的內部邏輯"""
+    try:
+        # 移除其他反應
+        other_emoji = "0️⃣" if accept else "1️⃣"
+        for reaction in message.reactions:
+            if reaction.emoji == other_emoji:
+                async for reaction_user in reaction.users():
+                    if reaction_user.id == user.id:
+                        await message.remove_reaction(other_emoji, user)
 
-                accepted_users.discard(user.id)
-                await channel.send(f"**{user.mention} 已取消参加。**")
+        # 更新參加者列表
+        if accept:
+            accepted_users.add(user.id)
+            await message.channel.send(f"**{user.mention} 已同意參加！**")
+        else:
+            accepted_users.discard(user.id)
+            await message.channel.send(f"**{user.mention} 已取消參加！**")
 
-                # 將用戶從語音頻道中移出
-                member = message.guild.get_member(user.id)
-                if member.voice and member.voice.channel:
-                    try:
-                        await member.move_to(None)  # 將用戶移出語音頻道
-                        await channel.send(f"**{user.mention} 已從語音中移出。**")
-                    except discord.Forbidden:
-                        await channel.send(f"**沒有權限移動 {user.mention}。**")
-                    except discord.HTTPException as e:
-                        await channel.send(f"**移動用戶時出錯: {e}**")
-
-        except Exception as e:
-            print(f"處理表情反應時出錯: {e}")
-
+            # 將用戶從語音頻道移出
+            member = message.guild.get_member(user.id)
+            if member.voice and member.voice.channel == voice_channel:
+                await member.move_to(None)
+                await message.channel.send(f"**{user.mention} 已從語音中移出。**")
+    except discord.Forbidden:
+        await message.channel.send(f"**無法移動 {user.mention}，權限不足。**")
+    except discord.HTTPException as e:
+        await message.channel.send(f"**移動用戶時出錯: {e}**")
+        
 # 啟動機器人
 if __name__ == "__main__":
     try:
