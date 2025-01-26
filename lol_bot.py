@@ -137,6 +137,11 @@ async def on_raw_reaction_add(payload):
 
             # 檢查表情
             if str(payload.emoji) == "1️⃣":  # :one: 表情
+                # 如果用戶已經有 0️⃣ 反應，則移除 0️⃣ 反應
+                for reaction in message.reactions:
+                    if str(reaction.emoji) == "0️⃣" and await reaction.users().get(id=user.id):
+                        await message.remove_reaction("0️⃣", user)
+
                 accepted_users.add(user.id)
                 await channel.send(f"**{user.mention} 已同意参加！**")
 
@@ -153,6 +158,11 @@ async def on_raw_reaction_add(payload):
                     await channel.send("**找不到語音頻道，請檢查 頻道_ID 是否正確。**")
 
             elif str(payload.emoji) == "0️⃣":  # :zero: 表情
+                # 如果用戶已經有 1️⃣ 反應，則移除 1️⃣ 反應
+                for reaction in message.reactions:
+                    if str(reaction.emoji) == "1️⃣" and await reaction.users().get(id=user.id):
+                        await message.remove_reaction("1️⃣", user)
+
                 accepted_users.discard(user.id)
                 await channel.send(f"**{user.mention} 已取消参加。**")
 
