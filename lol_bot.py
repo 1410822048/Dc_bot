@@ -160,6 +160,18 @@ async def _handle_reaction(message, user, accept=True):
         if accept:
             accepted_users.add(user.id)
             await message.channel.send(f"**{user.mention} 已同意參加！**")
+
+            # 生成語音頻道邀請連結
+            if voice_channel and isinstance(voice_channel, discord.VoiceChannel):
+                try:
+                    invite = await voice_channel.create_invite(max_uses=1, unique=True)
+                    await message.channel.send(f"{user.mention} 請點擊 🎧 __**[這裡]({invite.url})**__ 加入！")
+                except discord.Forbidden:
+                    await message.channel.send("**沒有權限生成邀請連結。**")
+                except discord.HTTPException as e:
+                    await message.channel.send(f"**生成邀請連結時出錯: {e}**")
+            else:
+                await message.channel.send("**找不到語音頻道，請檢查 頻道_ID 是否正確。**")
         else:
             accepted_users.discard(user.id)
             await message.channel.send(f"**{user.mention} 已取消參加！**")
