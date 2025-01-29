@@ -106,7 +106,7 @@ async def daily_invite():
                 else:
                     await target_channel.send("**找不到指定的語音頻道，請檢查 頻道_ID 是否正確。**")
             else:
-                await target_channel.send("**等等開幹！**")
+                await target_channel.send(embed=discord.Embed().set_image(url="https://media.tenor.com/6iUDk6jXYdwAAAAC/%E4%B8%81%E7%89%B9-%E7%88%B8%E7%88%B8%E7%99%BC%E9%A3%86%E4%BA%86.gif"))
 
         except Exception as e:
             print(f"發送邀請訊息出錯: {e}")
@@ -165,7 +165,7 @@ async def _handle_reaction(message, user, accept=True):
             if voice_channel and isinstance(voice_channel, discord.VoiceChannel):
                 try:
                     invite = await voice_channel.create_invite(max_uses=1, unique=True)
-                    await message.channel.send(f"{user.mention} 請點擊 🎧 __**[這裡]({invite.url})**__ 加入！")
+                    await message.channel.send(f"{user.mention} 請點擊 🎧 __**[這裡](<{invite.url}>)**__ 加入！")
                 except discord.Forbidden:
                     await message.channel.send("**沒有權限生成邀請連結。**")
                 except discord.HTTPException as e:
