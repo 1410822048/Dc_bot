@@ -106,7 +106,12 @@ async def daily_invite():
                 else:
                     await target_channel.send("**找不到指定的語音頻道，請檢查 頻道_ID 是否正確。**")
             else:
-                await target_channel.send(embed=discord.Embed().set_image(url="https://tenor.com/view/%E4%B8%81%E7%89%B9-%E7%88%B8%E7%88%B8%E7%99%BC%E9%A3%86%E4%BA%86-gif-21449654"))
+                    # 建立嵌入物件並設定直接 GIF 連結
+                    embed = discord.Embed()
+                    embed.set_image(url="https://media1.tenor.com/m/LIhHu8kdj8oAAAAd/%E4%B8%81%E7%89%B9-%E7%88%B8%E7%88%B8%E7%99%BC%E9%A3%86%E4%BA%86.gif")
+    
+                    # 同時發送文字和 GIF
+                    await target_channel.send(embed=embed)
 
         except Exception as e:
             print(f"發送邀請訊息出錯: {e}")
