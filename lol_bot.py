@@ -47,7 +47,7 @@ INVITE_MESSAGE = (
 )
 # 定时任务区
 INVITE_TIME = time(13, 30)
-SHUTDOWN_TIME = time(14, 05)
+SHUTDOWN_TIME = time(14, 5)
 CHECK_TIME = time(14, 0)
 
 
