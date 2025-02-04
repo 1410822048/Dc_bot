@@ -15,6 +15,7 @@ intents.message_content = True
 intents.reactions = True
 intents.presences = True
 intents.members = True
+intents.voice_states = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
@@ -44,6 +45,11 @@ INVITE_MESSAGE = (
     "\n"
     "**15 分鐘後結算**。"
 )
+# 定时任务区
+INVITE_TIME = time(13, 30)
+SHUTDOWN_TIME = time(14, 05)
+CHECK_TIME = time(14, 0)
+
 
 @bot.event
 async def on_ready():
@@ -70,13 +76,13 @@ async def on_ready():
         print("Bot 未找到語音頻道。")
 
     # 啟動定時任務
-    if not daily_invite.is_running():
-        daily_invite.start()
-    if not stop_bot_task.is_running():
-        stop_bot_task.start()
+    tasks_to_start = [daily_invite, stop_bot_task, morning_check]
+    for task in tasks_to_start:
+        if not task.is_running():
+            task.start()
 
 # 13:30 發送邀請訊息
-@tasks.loop(time=time(13, 30))
+@tasks.loop(time=INVITE_TIME)
 async def daily_invite():
     if target_channel:
         try:
@@ -121,8 +127,40 @@ async def daily_invite():
     else:
         print("沒有找到目標頻道，請檢查 Bot 是否已加入伺服器。")
 
-# 14:00 關閉機器人
-@tasks.loop(time=time(14, 00))
+
+@tasks.loop(time=CHECK_TIME)
+async def morning_check():
+    """晚上 10 点检查成员是否在语音频道"""
+    if not target_channel or not voice_channel:
+        return
+
+    try:
+        # 获取需要检查的用户对象
+        missing_users = []
+        for user_id in accepted_users.copy():  # 使用副本遍历避免修改原始集合
+            member = voice_channel.guild.get_member(user_id)
+            if not member:
+                continue  # 用户不在服务器中
+                
+            # 检查是否在语音频道
+            if not member.voice or member.voice.channel != voice_channel:
+                missing_users.append(member.mention)
+
+        # 发送提醒
+        if missing_users:
+            mention_list = " ".join(missing_users)
+            await target_channel.send(
+                f"{mention_list}\n"
+                "**全世界都在等妳！**\n"
+                "請立即加入語音！"
+            )
+            
+    except Exception as e:
+        print(f"失敗: {e}")
+
+
+# 14:05 關閉機器人
+@tasks.loop(time=SHUTDOWN_TIME)
 async def stop_bot_task():
     print("機器人已關閉！")
     await bot.close()  # 登出機器人
