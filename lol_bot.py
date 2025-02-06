@@ -25,6 +25,10 @@ FIXED_USERS = [
     547051019473780767, 417292881028579338
 ]
 
+# 在全局變數
+current_invite_message_id = None
+processing_active = False  # 新增處理狀態標記
+
 # 存儲同意參加的用戶
 accepted_users = set()
 
@@ -84,16 +88,23 @@ async def on_ready():
 # 13:30 發送邀請訊息
 @tasks.loop(time=INVITE_TIME)
 async def daily_invite():
+    global current_invite_message_id, processing_active
     if target_channel:
         try:
             accepted_users.clear()
+            processing_active = True  # 開啟處理模式
             message = await target_channel.send(INVITE_MESSAGE)
-            # 添加反應（表情）
-            await message.add_reaction("1️⃣")
-            await message.add_reaction("0️⃣")
+            current_invite_message_id = message.id  # 記錄當前訊息ID
+            await asyncio.gather(
+                message.add_reaction("1️⃣"),
+                message.add_reaction("0️⃣")
+            )
             
             # 等待 15 分鐘
             await asyncio.sleep(15 * 60)  # 15 分鐘 = 900 秒
+
+            processing_active = False
+            current_invite_message_id = None
 
             # 檢查同意參加的用戶數量
             if len(accepted_users) < 3:
@@ -107,8 +118,10 @@ async def daily_invite():
                             await target_channel.send(f"{member.mention} 已從語音頻道中移出。")
                         except discord.Forbidden:
                             await target_channel.send(f"**沒有權限移動 {member.mention}。**")
+                            continue
                         except discord.HTTPException as e:
                             await target_channel.send(f"**移動用戶時出錯: {e}**")
+                            continue
                 else:
                     await target_channel.send("**找不到指定的語音頻道，請檢查 頻道_ID 是否正確。**")
             else:
@@ -121,9 +134,11 @@ async def daily_invite():
 
         except Exception as e:
             print(f"發送邀請訊息出錯: {e}")
+            processing_active = False
+            current_invite_message_id = None
 
         daily_invite.stop()
-        
+
     else:
         print("沒有找到目標頻道，請檢查 Bot 是否已加入伺服器。")
 
@@ -133,6 +148,9 @@ async def morning_check():
     """晚上 10 点检查成员是否在语音频道"""
     if not target_channel or not voice_channel:
         return
+
+    if len(accepted_users) < 3:
+        return    
 
     try:
         # 获取需要检查的用户对象
@@ -169,10 +187,13 @@ async def stop_bot_task():
 @bot.event
 async def on_raw_reaction_add(payload):
     """處理用戶的表情反應"""
-    if payload.user_id == bot.user.id:
-        return
-
-    if payload.channel_id != target_channel.id or payload.user_id not in FIXED_USERS:
+    if any([
+        payload.user_id == bot.user.id,
+        not processing_active,  # 新增狀態檢查
+        payload.message_id != current_invite_message_id,  # 檢查是否為當前訊息
+        payload.channel_id != target_channel.id,
+        payload.user_id not in FIXED_USERS
+    ]):
         return
 
     try:
@@ -190,6 +211,8 @@ async def on_raw_reaction_add(payload):
 
 async def _handle_reaction(message, user, accept=True):
     """處理表情反應的內部邏輯"""
+    if not processing_active or message.id != current_invite_message_id:
+        return  # 雙重驗證確保時效
     try:
         # 移除其他反應
         other_emoji = "0️⃣" if accept else "1️⃣"
