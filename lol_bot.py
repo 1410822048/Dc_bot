@@ -50,9 +50,9 @@ INVITE_MESSAGE = (
     "**15 分鐘後結算**。"
 )
 # 定时任务区
-INVITE_TIME = time(13, 30)
-SHUTDOWN_TIME = time(14, 5)
-CHECK_TIME = time(14, 0)
+INVITE_TIME = time(12, 30)
+SHUTDOWN_TIME = time(13, 5)
+CHECK_TIME = time(13, 0)
 
 
 @bot.event
